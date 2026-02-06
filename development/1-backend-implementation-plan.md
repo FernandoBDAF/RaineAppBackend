@@ -1,17 +1,27 @@
 # Raine Backend Implementation Plan
 ## Firebase Infrastructure, Cloud Functions & Observability
 
-### Tech Stack Overview
-- **Infrastructure as Code**: Firebase CLI + Terraform (optional)
-- **Authentication**: Firebase Auth
-- **Database**: Cloud Firestore
-- **Serverless Functions**: Firebase Cloud Functions (Node.js/TypeScript)
-- **Storage**: Firebase Cloud Storage
-- **Feature Flags**: Firebase Remote Config
-- **Analytics**: Firebase Analytics → BigQuery
-- **Monitoring**: Firebase Performance Monitoring, Cloud Logging, Cloud Monitoring
+> **Implementation Status:** MVP Deployed ✅  
+> **Region:** us-west2  
+> **Project ID:** raineapp-backend  
+> **Deployed Functions:** 9/9  
+> **Detailed deployment log:** See `documents/IMPLEMENTATION-GUIDE.md`
+
+### Tech Stack (Implemented)
+- **Authentication**: Firebase Auth (email/password enabled; social providers pending)
+- **Database**: Cloud Firestore (Native mode, us-west2)
+- **Serverless Functions**: Firebase Cloud Functions Gen1 + Gen2 (Node.js 20 / TypeScript)
+- **Storage**: Firebase Cloud Storage (us-west2)
+- **Secrets**: Google Secret Manager (replaces deprecated functions:config)
 - **Webhooks**: RevenueCat webhooks → Cloud Functions
-- **Optional API**: Railway (if needed for specialized endpoints)
+- **Monitoring**: Cloud Logging (configured)
+
+### Not Yet Implemented
+- Feature Flags (Firebase Remote Config) - deferred
+- Analytics (Firebase Analytics → BigQuery) - deferred
+- Performance Monitoring - deferred
+- CI/CD pipeline - deferred
+- Terraform IaC - deferred
 
 ---
 

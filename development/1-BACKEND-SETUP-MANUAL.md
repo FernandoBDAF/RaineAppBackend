@@ -72,53 +72,31 @@ Install the following before proceeding:
 ## Step 2: Firebase Project Setup (Console)
 
 > **Status**: ✅ COMPLETED
-> 
-> Project `raineapp-backend` has been created with Blaze plan, Firestore, and Storage enabled.
 
 ### 2.1 Create Firebase Project ✅
-
 - Project created: `raineapp-backend`
+- Project Number: `358132660024`
 - Google Analytics: Enabled
 
 ### 2.2 Upgrade to Blaze Plan ✅
-
 Cloud Functions require the Blaze (pay-as-you-go) plan - completed.
 
 ### 2.3 Enable Firebase Services
 
-#### Authentication - Social Providers (TODO)
-Social login providers need additional setup:
-
-**Facebook Login:**
-1. Go to **Build** → **Authentication** → **Sign-in method**
-2. Enable **Facebook**
-3. You'll need to create a Facebook App at [developers.facebook.com](https://developers.facebook.com)
-4. Get App ID and App Secret from Facebook
-5. Add OAuth redirect URI to Facebook app settings
-
-**Instagram Login:**
-- Instagram uses Facebook Login (same Facebook App)
-- Users authenticate via Facebook's Instagram Basic Display API
-
-**LinkedIn Login:**
-- Firebase doesn't have native LinkedIn support
-- Options:
-  - Use **OpenID Connect** custom provider
-  - Handle LinkedIn OAuth in Cloud Functions and create Firebase custom tokens
-
-> **Note**: Social auth setup is a separate task. The backend can be deployed first.
+#### Authentication ✅
+- Email/Password: Enabled (for dev/testing)
+- Social providers: See `development/4-authentication-implementation-plan.md`
 
 #### Cloud Firestore ✅
-- Database created in production mode
-- Location: Check Firebase Console for region
+- Database `(default)` created in Native mode
+- Region: **us-west2**
+- Note: An extra database `raineapp-default` was accidentally created and can be deleted (see backlog)
 
 #### Cloud Storage ✅
 - Storage enabled
 
-#### Cloud Functions
-1. Go to **Build** → **Functions**
-2. Click **"Get started"** if not already done
-3. Functions will be deployed from `Raine-bk/functions/`
+#### Cloud Functions ✅
+- 9 functions deployed to **us-west2**
 
 ### 2.4 Firebase Apps Created ✅
 
@@ -133,29 +111,32 @@ Three apps have been registered:
 - Config file: `RaineApp/google-services.json`
 
 **Web App:**
-- Config captured below
+- Registered for web SDK reference
 
 ### 2.5 Firebase Configuration
 
-**Project ID:** `raineapp-backend`
+**Project ID:** `raineapp-backend`  
+**Region:** `us-west2`
 
-**Web Config (for reference):**
-```javascript
-const firebaseConfig = {
-  apiKey: "AIzaSyBQgUkoEXgQHwRRfqMAY3JJguu_xwzX3Y4",
-  authDomain: "raineapp-backend.firebaseapp.com",
-  projectId: "raineapp-backend",
-  storageBucket: "raineapp-backend.firebasestorage.app",
-  messagingSenderId: "358132660024",
-  appId: "1:358132660024:web:7db9ada17b2fc4524633cd",
-  measurementId: "G-NPJ83PPQQS"
-};
+**Webhook URL (deployed):**
 ```
-(This is wrong, the region is on the west)
-**Webhook URL (after deployment):**
+https://us-west2-raineapp-backend.cloudfunctions.net/revenuecatWebhook
 ```
-https://us-central1-raineapp-backend.cloudfunctions.net/revenuecatWebhook
-```
+
+### 2.6 IAM Permissions Configured ✅
+
+**Service Account:** `358132660024-compute@developer.gserviceaccount.com`
+
+Roles granted:
+- Cloud Functions Developer
+- Service Account User
+- Storage Object Viewer
+- Storage Object Admin
+- Artifact Registry Writer
+- Logs Writer
+
+### 2.7 App Engine ✅
+- Initialized in region **us-west2** (required for Cloud Functions)
 
 ---
 
@@ -178,7 +159,7 @@ RaineApp/
 
 ### 3.2 Expo Plugins Configured ✅
 
-The following plugins have been added to `app.json`:
+Only packages with valid Expo config plugins are listed in `app.json`:
 
 ```json
 {
@@ -191,18 +172,13 @@ The following plugins have been added to `app.json`:
     },
     "plugins": [
       "@react-native-firebase/app",
-      "@react-native-firebase/auth",
-      "@react-native-firebase/firestore",
-      "@react-native-firebase/functions",
-      "@react-native-firebase/storage",
-      "@react-native-firebase/messaging",
-      "@react-native-firebase/crashlytics",
-      "@react-native-firebase/analytics",
-      "@react-native-firebase/remote-config"
+      "@react-native-firebase/crashlytics"
     ]
   }
 }
 ```
+
+> **Note:** Packages like `firestore`, `functions`, `storage`, `auth`, `analytics`, `messaging`, and `remote-config` do NOT have Expo config plugins and must NOT be listed here. They work automatically once `@react-native-firebase/app` is configured.
 
 ### 3.3 Rebuild Required After Changes
 
@@ -239,84 +215,41 @@ Already installed in `RaineApp/package.json`:
 
 ## Step 4: Backend Local Environment Setup
 
-### 4.1 Login to Firebase CLI
+> **Status**: ✅ COMPLETED
+
+### 4.1 Login to Firebase CLI ✅
 
 ```bash
-# Login to Firebase (opens browser)
 firebase login
-
-# Verify login
+# Logged in as fernando@raineapp.com
 firebase projects:list
+# Shows: raineapp-backend (358132660024)
 ```
 
-You should see `raineapp-backend` in the list.
+### 4.2 Directory Structure ✅
 
-### 4.2 Create Project Directory Structure
+Created and populated with Cloud Functions source code.
 
-Navigate to the Raine-bk directory and create the folder structure:
-
-```bash
-cd /path/to/Raine/Raine-bk
-
-# Create directory structure
-mkdir -p functions/src/triggers/auth
-mkdir -p functions/src/triggers/firestore
-mkdir -p functions/src/webhooks
-mkdir -p functions/src/callable
-mkdir -p functions/src/scheduled
-mkdir -p functions/src/services
-mkdir -p functions/src/utils
-mkdir -p functions/src/types
-mkdir -p firestore
-mkdir -p storage
-```
-
-### 4.3 Initialize Firebase in the Directory
+### 4.3 Firebase Init ✅
 
 ```bash
-cd /path/to/Raine/Raine-bk
-
-# Initialize Firebase (select your project)
 firebase init
+# Selected: Firestore, Functions (TypeScript), Storage, Emulators
+# Project: raineapp-backend
 ```
-
-When prompted, select:
-- **Features**: 
-  - ✅ Firestore
-  - ✅ Functions
-  - ✅ Storage
-  - ✅ Emulators
-- **Project**: Use existing project → select `raineapp-backend`
-- **Firestore Rules**: `firestore/firestore.rules`
-- **Firestore Indexes**: `firestore/firestore.indexes.json`
-- **Functions language**: TypeScript
-- **ESLint**: Yes (recommended)
-- **Install dependencies**: No (we'll do this after LLM generates package.json)
-- **Storage Rules**: `storage/storage.rules`
-- **Emulators**: Select Auth, Functions, Firestore, Storage
-
-> **Important**: If `firebase init` creates default files, the LLM will overwrite them with the correct content.
 
 ---
 
 ## Step 5: Install Dependencies
 
-**Run this AFTER the LLM has generated all code files.**
+> **Status**: ✅ COMPLETED
 
 ```bash
 cd /path/to/Raine/Raine-bk/functions
-
-# Install dependencies
-npm install
-
-# Verify TypeScript compiles
-npm run build
+npm install   # ✅ Done
+npm run build # ✅ Passes
+npm run lint  # ✅ Passes
 ```
-
-If you encounter errors:
-- Check that all source files were created
-- Ensure `tsconfig.json` is correct
-- Run `npm run build` to see specific TypeScript errors
 
 ---
 
@@ -404,10 +337,10 @@ Open the Emulator UI and test:
 
 3. **Webhook** (manual test)
    ```bash
-   # Test RevenueCat webhook endpoint
-   curl -X POST http://localhost:5001/raineapp-backend/us-central1/revenuecatWebhook \
+   # Test RevenueCat webhook endpoint (local emulator)
+   curl -X POST http://localhost:5001/raineapp-backend/us-west2/revenuecatWebhook \
      -H "Content-Type: application/json" \
-     -H "Authorization: Bearer YOUR_WEBHOOK_TOKEN" \
+     -H "Authorization: Bearer rainerevenuecat" \
      -d '{"event": {"id": "test-123", "type": "INITIAL_PURCHASE", "app_user_id": "user123"}}'
    ```
 
@@ -475,12 +408,12 @@ After deployment, verify in Firebase Console:
 
 ## Step 9: RevenueCat Webhook Configuration
 
-### 9.1 Get Your Webhook URL
+> **Status**: ⏳ DEFERRED (see `development/0-backlog.md` → Task 1)
 
-After deploying functions, your webhook URL is:
+### 9.1 Webhook URL (deployed)
 
 ```
-https://us-central1-raineapp-backend.cloudfunctions.net/revenuecatWebhook
+https://us-west2-raineapp-backend.cloudfunctions.net/revenuecatWebhook
 ```
 
 ### 9.2 Configure in RevenueCat Dashboard
@@ -490,8 +423,8 @@ https://us-central1-raineapp-backend.cloudfunctions.net/revenuecatWebhook
 3. Go to **Project Settings** → **Integrations** → **Webhooks**
 4. Click **"+ New"**
 5. Configure:
-   - **URL**: `https://us-central1-raineapp-backend.cloudfunctions.net/revenuecatWebhook`
-   - **Authorization header**: `Bearer YOUR_WEBHOOK_TOKEN` (the token you generated in Step 6.1)
+   - **URL**: `https://us-west2-raineapp-backend.cloudfunctions.net/revenuecatWebhook`
+   - **Authorization header**: `Bearer JvHD1k9Xlh6lawmes2uPoD+31Gy/BVspFKH92O9WQus=`
 6. Select events to receive:
    - ✅ INITIAL_PURCHASE
    - ✅ RENEWAL
@@ -601,11 +534,11 @@ firebase deploy --only storage --project raineapp-backend
 # View function logs
 firebase functions:log --project raineapp-backend
 
-# Set config values
-firebase functions:config:set key="value" --project raineapp-backend
+# Set secrets (modern approach - replaces deprecated functions:config)
+firebase functions:secrets:set SECRET_NAME --project raineapp-backend
 
-# Get config values
-firebase functions:config:get --project raineapp-backend
+# Access secrets
+firebase functions:secrets:access SECRET_NAME --project raineapp-backend
 
 # Build functions
 cd functions && npm run build
@@ -613,33 +546,39 @@ cd functions && npm run build
 
 ---
 
-## Checklist Before LLM Execution
+## Completion Checklist
 
 ### Firebase Console (Step 2) ✅
 - [x] Firebase project created (`raineapp-backend`)
 - [x] Upgraded to Blaze plan
-- [x] Firestore database created
+- [x] Firestore database `(default)` created (Native mode, us-west2)
 - [x] Cloud Storage enabled
-- [ ] Authentication: Social providers configured (Facebook, Instagram, LinkedIn) - *can be done later*
+- [x] App Engine initialized (us-west2)
+- [x] IAM permissions configured for compute service account
+- [ ] Authentication: Social providers (see `development/4-authentication-implementation-plan.md`)
 
 ### React Native Firebase (Step 3) ✅
-- [x] `GoogleService-Info.plist` in `RaineApp/` (iOS)
-- [x] `google-services.json` in `RaineApp/` (Android)
-- [x] `app.json` updated with Firebase plugins
+- [x] `GoogleService-Info.plist` in `RaineApp/` (iOS, bundle: com.raine.app)
+- [x] `google-services.json` in `RaineApp/` (Android, package: com.raine.app)
+- [x] `app.json` updated with Firebase plugins (app + crashlytics only)
 
-### Backend Setup (Step 4) - TODO
-- [ ] Firebase CLI installed and logged in
-- [ ] Directory structure created in `Raine-bk/`
-- [ ] `firebase init` completed in `Raine-bk/`
+### Backend Setup (Step 4) ✅
+- [x] Firebase CLI installed and logged in (fernando@raineapp.com)
+- [x] Directory structure created in `Raine-bk/`
+- [x] `firebase init` completed in `Raine-bk/`
 
-## Checklist After LLM Execution
+### Code & Deployment ✅
+- [x] `npm install` run in `Raine-bk/functions/`
+- [x] `npm run build` succeeds
+- [x] `npm run lint` passes (ESLint configured: max-len 120, JSDoc off)
+- [x] Secrets configured via `firebase functions:secrets:set` (REVENUECAT_WEBHOOK_SECRET)
+- [x] `.secret.local` created for emulator testing
+- [x] Emulator tests pass (all 9 functions loaded)
+- [x] Deployed to Firebase (9 functions in us-west2)
+- [x] Webhook security verified (401 invalid, 200 valid)
 
-- [ ] `npm install` run in `Raine-bk/functions/` directory
-- [ ] `npm run build` succeeds
-- [ ] Secrets configured via `firebase functions:config:set`
-- [ ] `.runtimeconfig.json` created for emulator
-- [ ] Emulator tests pass
-- [ ] Deployed to Firebase
-- [ ] RevenueCat webhook configured
-- [ ] End-to-end test completed
-- [ ] Rebuild RaineApp with EAS (`eas build`)
+### Pending
+- [ ] RevenueCat webhook configured in dashboard (see backlog)
+- [ ] End-to-end test with mobile app (see backlog)
+- [ ] Authentication social providers (see `development/4-authentication-implementation-plan.md`)
+- [ ] EAS build of RaineApp (in progress)

@@ -1,5 +1,7 @@
 # EAS Build Plan - RaineApp with Firebase
 
+> **Status:** Phase 2 started - iOS simulator build initiated
+
 ## Overview
 
 This plan guides you through rebuilding RaineApp with EAS Build to include the Firebase native configuration. Since Firebase requires native code integration, we must use EAS Build (not Expo Go) to create custom development builds.
@@ -8,16 +10,23 @@ This plan guides you through rebuilding RaineApp with EAS Build to include the F
 
 ## Prerequisites Checklist
 
-Before starting, verify these are complete:
-
 - [x] Firebase project created (`raineapp-backend`)
-- [x] `GoogleService-Info.plist` downloaded and placed in `RaineApp/`
-- [x] `google-services.json` downloaded and placed in `RaineApp/`
-- [x] `app.json` configured with Firebase plugins
+- [x] `GoogleService-Info.plist` downloaded and placed in `RaineApp/` (bundle: com.raine.app)
+- [x] `google-services.json` downloaded and placed in `RaineApp/` (package: com.raine.app)
+- [x] `app.json` configured with Firebase plugins (`@react-native-firebase/app`, `@react-native-firebase/crashlytics`)
 - [x] React Native Firebase packages installed
 - [x] EAS CLI available
-- [ ] Apple Developer Account (for iOS builds)
+- [x] Expo config validated (`npx expo config --json` passes)
+- [ ] Apple Developer Account (for iOS device builds)
 - [ ] Google Play Console account (for Android production)
+
+### Important: Plugin Compatibility Note
+
+Not all `@react-native-firebase/*` packages have Expo config plugins. Only include these in `app.json` plugins array:
+- `@react-native-firebase/app` ✅
+- `@react-native-firebase/crashlytics` ✅
+
+Do NOT include: `firestore`, `functions`, `storage`, `auth`, `analytics`, `messaging`, `remote-config` (they cause build errors like "Package does not contain a valid config plugin").
 
 ---
 
