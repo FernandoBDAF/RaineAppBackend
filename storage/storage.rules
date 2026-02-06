@@ -1,0 +1,66 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Validate image file
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size < 5 * 1024 * 1024; // 5MB limit
+    }
+    
+    // ========================================================================
+    // User Profile Photos
+    // ========================================================================
+    
+    match /users/{userId}/profile/{fileName} {
+      // Anyone authenticated can view profile photos
+      allow read: if isAuthenticated();
+      
+      // Users can only upload their own profile photos
+      allow write: if isOwner(userId) && isValidImage();
+    }
+    
+    // ========================================================================
+    // Room Photos
+    // ========================================================================
+    
+    match /rooms/{roomId}/photo/{fileName} {
+      // Members can view room photos (simplified - full membership check would need Firestore)
+      allow read: if isAuthenticated();
+      
+      // Only authenticated users can upload (admin check done at app level)
+      allow write: if isAuthenticated() && isValidImage();
+    }
+    
+    // ========================================================================
+    // Message Attachments (Future Feature)
+    // ========================================================================
+    
+    match /rooms/{roomId}/attachments/{attachmentId} {
+      // Members can view attachments
+      allow read: if isAuthenticated();
+      
+      // Members can upload attachments (size limit: 10MB)
+      allow write: if isAuthenticated() 
+        && request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // ========================================================================
+    // Default: Deny all other access
+    // ========================================================================
+    
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

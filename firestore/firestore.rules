@@ -1,0 +1,202 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========================================================================
+    // Helper Functions
+    // ========================================================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is the owner of the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Check if user is a member of a room (optimized with exists())
+    function isRoomMember(roomId) {
+      return exists(/databases/$(database)/documents/rooms/$(roomId)/members/$(request.auth.uid));
+    }
+    
+    // Check if user is admin of a room
+    function isRoomAdmin(roomId) {
+      let memberDoc = get(/databases/$(database)/documents/rooms/$(roomId)/members/$(request.auth.uid));
+      return memberDoc != null && memberDoc.data.role == 'admin';
+    }
+    
+    // Enforce pagination limit for queries
+    function enforcePaginationLimit(maxLimit) {
+      return request.query.limit <= maxLimit;
+    }
+    
+    // ========================================================================
+    // Users Collection
+    // ========================================================================
+    
+    match /users/{userId} {
+      // Users can read their own profile
+      // Other authenticated users can read basic profile info
+      allow read: if isAuthenticated();
+      
+      // Users can only update their own profile
+      // Cannot update subscription fields (managed by Cloud Functions)
+      allow update: if isOwner(userId) 
+        && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['subscriptionStatus', 'subscriptionPlan', 'subscriptionStartedAt', 
+                     'subscriptionUpdatedAt', 'subscriptionCancelledAt', 'subscriptionExpiredAt',
+                     'suspended', 'suspendedAt', 'suspendReason']);
+      
+      // Users cannot create or delete profiles directly (managed by Auth triggers)
+      allow create, delete: if false;
+      
+      // Devices subcollection
+      match /devices/{deviceId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Room memberships subcollection (inverse lookup)
+      match /roomMemberships/{roomId} {
+        allow read: if isOwner(userId);
+        allow write: if false; // Managed by Cloud Functions
+      }
+    }
+    
+    // ========================================================================
+    // Rooms Collection
+    // ========================================================================
+    
+    match /rooms/{roomId} {
+      // Only members can read room details
+      allow read: if isAuthenticated() && isRoomMember(roomId);
+      
+      // Only authenticated users can create rooms
+      allow create: if isAuthenticated() 
+        && request.resource.data.memberCount >= 1;
+      
+      // Only admins can update room settings
+      allow update: if isAuthenticated() && isRoomAdmin(roomId);
+      
+      // Only admins can delete rooms
+      allow delete: if isAuthenticated() && isRoomAdmin(roomId);
+      
+      // Members subcollection
+      match /members/{memberId} {
+        // Members can view other members
+        allow read: if isAuthenticated() && isRoomMember(roomId);
+        
+        // Users can add themselves (join) or admins can add others
+        allow create: if isAuthenticated() 
+          && (isOwner(memberId) || isRoomAdmin(roomId));
+        
+        // Members can update their own membership (e.g., notifications)
+        // Admins can update any member's role
+        allow update: if isAuthenticated() 
+          && (isOwner(memberId) || isRoomAdmin(roomId));
+        
+        // Users can remove themselves or admins can remove others
+        allow delete: if isAuthenticated() 
+          && (isOwner(memberId) || isRoomAdmin(roomId));
+      }
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Only members can read messages (with pagination limit)
+        allow read: if isAuthenticated() 
+          && isRoomMember(roomId)
+          && (request.query == null || enforcePaginationLimit(50));
+        
+        // Only members can create messages
+        allow create: if isAuthenticated() 
+          && isRoomMember(roomId)
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.deleted == false;
+        
+        // Only message sender can update (edit) their own messages
+        allow update: if isAuthenticated() 
+          && isRoomMember(roomId)
+          && resource.data.senderId == request.auth.uid
+          && request.resource.data.senderId == resource.data.senderId;
+        
+        // Soft delete only - sender or admin
+        allow delete: if false; // Use soft delete via update instead
+        
+        // Read receipts
+        match /readBy/{readerId} {
+          allow read: if isAuthenticated() && isRoomMember(roomId);
+          allow write: if isOwner(readerId) && isRoomMember(roomId);
+        }
+      }
+      
+      // Typing indicators subcollection
+      match /typing/{userId} {
+        allow read: if isAuthenticated() && isRoomMember(roomId);
+        allow write: if isOwner(userId) && isRoomMember(roomId);
+      }
+    }
+    
+    // ========================================================================
+    // Notifications Collection
+    // ========================================================================
+    
+    match /notifications/{notificationId} {
+      // Users can only read their own notifications
+      allow read: if isAuthenticated() 
+        && resource.data.userId == request.auth.uid;
+      
+      // Users can only update (mark as read) their own notifications
+      allow update: if isAuthenticated() 
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      
+      // Notifications are created by Cloud Functions only
+      allow create, delete: if false;
+    }
+    
+    // ========================================================================
+    // User Reports Collection (for moderation)
+    // ========================================================================
+    
+    match /userReports/{reportId} {
+      // Users can create reports
+      allow create: if isAuthenticated() 
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      
+      // Users cannot read, update, or delete reports
+      allow read, update, delete: if false;
+    }
+    
+    // ========================================================================
+    // System Collections (Cloud Functions only)
+    // ========================================================================
+    
+    // Rate limits - managed by Cloud Functions
+    match /rateLimits/{recordId} {
+      allow read, write: if false;
+    }
+    
+    // Processed events (idempotency) - managed by Cloud Functions
+    match /processedEvents/{eventId} {
+      allow read, write: if false;
+    }
+    
+    // Processed webhooks (idempotency) - managed by Cloud Functions
+    match /processedWebhooks/{webhookId} {
+      allow read, write: if false;
+    }
+    
+    // Notification retry queue - managed by Cloud Functions
+    match /notificationRetryQueue/{itemId} {
+      allow read, write: if false;
+    }
+    
+    // Dead letter queue - managed by Cloud Functions
+    match /deadLetterQueue/{itemId} {
+      allow read, write: if false;
+    }
+  }
+}
