@@ -2,7 +2,7 @@
  * Raine Backend - TypeScript Type Definitions
  */
 
-import {Timestamp, FieldValue} from "firebase-admin/firestore";
+import {FieldValue, Timestamp} from "firebase-admin/firestore";
 
 // ============================================================================
 // User Types
@@ -10,8 +10,8 @@ import {Timestamp, FieldValue} from "firebase-admin/firestore";
 
 export interface NotificationPreferences {
   enabled: boolean;
-  quietHoursStart?: string; // "HH:MM" format
-  quietHoursEnd?: string; // "HH:MM" format
+  quietHoursStart?: string | null; // "HH:MM" format
+  quietHoursEnd?: string | null; // "HH:MM" format
 }
 
 export interface User {
@@ -31,6 +31,28 @@ export interface User {
   suspendReason?: string;
   createdAt: Timestamp | FieldValue;
   lastSeen?: Timestamp | FieldValue;
+  firstName: string;
+  lastInitial: string;
+  zipCode: string;
+  city: string;
+  state: string;
+  county: string;
+  cityFeel: string;
+  childCount: number;
+  isExpecting: boolean;
+  dueDate: null,
+  children: [],
+  beforeMotherhood: [],
+  perfectWeekend: [],
+  feelYourself: null,
+  hardTruths: [],
+  unexpectedJoys: [],
+  aesthetic: [],
+  momFriendStyle: [],
+  whatBroughtYou: null,
+  generatedBio: "",
+  bioApproved: false,
+  profileSetupCompleted: false
 }
 
 export type SubscriptionStatus =

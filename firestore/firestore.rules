@@ -73,9 +73,9 @@ service cloud.firestore {
       // Only members can read room details
       allow read: if isAuthenticated() && isRoomMember(roomId);
       
-      // Only authenticated users can create rooms
+      // Only authenticated users can create rooms (must include at least one member)
       allow create: if isAuthenticated() 
-        && request.resource.data.memberCount >= 1;
+        && request.resource.data.memberIds.size() >= 1;
       
       // Only admins can update room settings
       allow update: if isAuthenticated() && isRoomAdmin(roomId);
@@ -115,11 +115,16 @@ service cloud.firestore {
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.deleted == false;
         
-        // Only message sender can update (edit) their own messages
+        // Message sender can edit text; any room member can update reactions
         allow update: if isAuthenticated() 
           && isRoomMember(roomId)
-          && resource.data.senderId == request.auth.uid
-          && request.resource.data.senderId == resource.data.senderId;
+          && request.resource.data.senderId == resource.data.senderId
+          && (
+            // Sender can update any mutable fields
+            resource.data.senderId == request.auth.uid
+            // Non-senders can only update reactions
+            || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+          );
         
         // Soft delete only - sender or admin
         allow delete: if false; // Use soft delete via update instead
