@@ -1,6 +1,6 @@
 {
   "firestore": {
-    "database": "default",
+    "database": "(default)",
     "location": "us-west2",
     "rules": "firestore/firestore.rules",
     "indexes": "firestore/firestore.indexes.json"

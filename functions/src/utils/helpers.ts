@@ -2,11 +2,13 @@
  * Raine Backend - Utility Helper Functions
  */
 
-import * as admin from "firebase-admin";
+import {getFirestore} from "firebase-admin/firestore";
+import {getAuth} from "firebase-admin/auth";
+import {getMessaging} from "firebase-admin/messaging";
 
-export const db = admin.firestore();
-export const auth = admin.auth();
-export const messaging = admin.messaging();
+export const db = getFirestore();
+export const auth = getAuth();
+export const messaging = getMessaging();
 
 /**
  * Truncate a message to a maximum length
@@ -20,8 +22,8 @@ export function truncateMessage(text: string, maxLength: number): string {
  * Check if current time is within quiet hours
  */
 export function isInQuietHours(prefs: {
-  quietHoursStart?: string;
-  quietHoursEnd?: string;
+  quietHoursStart?: string | null;
+  quietHoursEnd?: string | null;
 }): boolean {
   if (!prefs.quietHoursStart || !prefs.quietHoursEnd) return false;
 
