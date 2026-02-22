@@ -9,6 +9,8 @@ import * as admin from "firebase-admin";
 // Initialize Firebase Admin
 admin.initializeApp();
 
+export const REGION = "us-west2";
+
 // ============================================================================
 // Auth Triggers
 // ============================================================================

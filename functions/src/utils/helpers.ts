@@ -2,10 +2,14 @@
  * Raine Backend - Utility Helper Functions
  */
 
+import {initializeApp, getApps} from "firebase-admin/app";
 import {getFirestore} from "firebase-admin/firestore";
 import {getAuth} from "firebase-admin/auth";
 import {getMessaging} from "firebase-admin/messaging";
 
+if (!getApps().length) {
+  initializeApp();
+}
 export const db = getFirestore();
 export const auth = getAuth();
 export const messaging = getMessaging();
@@ -56,7 +60,7 @@ export function generateDeviceId(): string {
  * Batch delete documents (handles Firestore 500 limit)
  */
 export async function batchDelete(
-  docs: FirebaseFirestore.QueryDocumentSnapshot[]
+  docs: FirebaseFirestore.QueryDocumentSnapshot[],
 ): Promise<void> {
   const batchSize = 500;
 
@@ -94,4 +98,45 @@ export function timingSafeEqual(a: string, b: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Generate a referral code (7 alphanumeric characters)
+ */
+const REFERRAL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+export function generateReferralCode(): string {
+  let code = "";
+  for (let i = 0; i < 7; i++) {
+    code += REFERRAL_CHARS.charAt(
+      Math.floor(Math.random() * REFERRAL_CHARS.length),
+    );
+  }
+  return code;
+}
+
+/**
+ * Check if a referral code is already in use by any user
+ */
+export async function isReferralCodeTaken(code: string): Promise<boolean> {
+  const snapshot = await db
+    .collection("users")
+    .where("referralCode", "==", code)
+    .limit(1)
+    .get();
+  return !snapshot.empty;
+}
+
+/**
+ * Generate a unique referral code (retries on collision)
+ */
+export async function generateUniqueReferralCode(): Promise<string> {
+  const maxAttempts = 5;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const code = generateReferralCode();
+    if (!(await isReferralCodeTaken(code))) {
+      return code;
+    }
+  }
+  throw new Error("Unable to generate unique referral code");
 }

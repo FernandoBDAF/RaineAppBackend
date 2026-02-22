@@ -6,7 +6,7 @@
 import * as functions from "firebase-functions/v1";
 import * as logger from "firebase-functions/logger";
 import {FieldValue} from "firebase-admin/firestore";
-import {db} from "../../utils/helpers";
+import {db, generateUniqueReferralCode} from "../../utils/helpers";
 import {User} from "../../types";
 
 const REGION = "us-west2";
@@ -28,6 +28,8 @@ export const onUserCreate = functions
     });
 
     try {
+      const referralCode = await generateUniqueReferralCode();
+
       // Create user profile document
       const userProfile: User = {
         uid: userId,
@@ -40,35 +42,14 @@ export const onUserCreate = functions
           quietHoursStart: null,
           quietHoursEnd: null,
         },
+        referralCode,
         createdAt: FieldValue.serverTimestamp(),
         lastSeen: FieldValue.serverTimestamp(),
-        firstName: "",
-        lastInitial: "",
-        zipCode: "",
-        city: "",
-        state: "",
-        county: "",
-        cityFeel: "",
-        childCount: 0,
-        isExpecting: false,
-        dueDate: null,
-        children: [],
-        beforeMotherhood: [],
-        perfectWeekend: [],
-        feelYourself: null,
-        hardTruths: [],
-        unexpectedJoys: [],
-        aesthetic: [],
-        momFriendStyle: [],
-        whatBroughtYou: null,
-        generatedBio: "",
-        bioApproved: false,
-        profileSetupCompleted: false,
       };
 
       await db.doc(`users/${userId}`).set(userProfile);
 
-      logger.info("User profile created", {userId});
+      logger.info("User profile created", {userId, referralCode});
     } catch (error: unknown) {
       const errObj = error as { code?: number; message?: string; details?: string };
       logger.error(

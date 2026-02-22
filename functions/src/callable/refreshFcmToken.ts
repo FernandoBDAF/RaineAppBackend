@@ -1,15 +1,10 @@
-/**
- * Raine Backend - Refresh FCM Token
- * Callable function to register/update device FCM tokens
- */
-
-import {onCall, HttpsError, CallableOptions} from "firebase-functions/v2/https";
-
-const REGION = "us-west2";
-const callableOptions: CallableOptions = {region: REGION};
+import * as functions from "firebase-functions/v1";
+import {HttpsError} from "firebase-functions/v1/https";
 import * as logger from "firebase-functions/logger";
 import {FieldValue} from "firebase-admin/firestore";
 import {db, generateDeviceId} from "../utils/helpers";
+
+const REGION = "us-west2";
 
 interface RefreshTokenRequest {
   token: string;
@@ -23,33 +18,23 @@ interface RefreshTokenResponse {
   deviceId: string;
 }
 
-/**
- * Register or update an FCM token for push notifications
- */
-export const refreshFcmToken = onCall<RefreshTokenRequest>(
-  callableOptions,
-  async (request): Promise<RefreshTokenResponse> => {
-  // Check authentication
-    if (!request.auth) {
+export const refreshFcmToken = functions
+  .region(REGION)
+  .https.onCall(async (data, context): Promise<RefreshTokenResponse> => {
+    if (!context.auth) {
       throw new HttpsError("unauthenticated", "Must be logged in");
     }
 
-    const userId = request.auth.uid;
-    const {token, deviceId, platform, appVersion} = request.data;
+    const userId = context.auth.uid;
+    const {token, deviceId, platform, appVersion} = data as RefreshTokenRequest;
 
-    // Validate input
     if (!token || typeof token !== "string") {
       throw new HttpsError("invalid-argument", "Token is required");
     }
 
-    logger.info("Refreshing FCM token", {
-      userId,
-      deviceId,
-      platform,
-    });
+    logger.info("Refreshing FCM token", {userId, deviceId, platform});
 
     try {
-    // Use existing deviceId or generate new one
       const finalDeviceId = deviceId || generateDeviceId();
       const deviceRef = db.doc(`users/${userId}/devices/${finalDeviceId}`);
 
@@ -62,10 +47,7 @@ export const refreshFcmToken = onCall<RefreshTokenRequest>(
 
       logger.info("FCM token updated", {userId, deviceId: finalDeviceId});
 
-      return {
-        success: true,
-        deviceId: finalDeviceId,
-      };
+      return {success: true, deviceId: finalDeviceId};
     } catch (error) {
       logger.error("Error refreshing FCM token", {
         userId,
