@@ -1,16 +1,11 @@
-/**
- * Raine Backend - Set Typing Status
- * Callable function to update typing indicators in rooms
- */
-
-import {onCall, HttpsError, CallableOptions} from "firebase-functions/v2/https";
-
-const REGION = "us-west2";
-const callableOptions: CallableOptions = {region: REGION};
+import * as functions from "firebase-functions/v1";
+import {HttpsError} from "firebase-functions/v1/https";
 import * as logger from "firebase-functions/logger";
 import {FieldValue} from "firebase-admin/firestore";
 import {db} from "../utils/helpers";
 import {withRateLimit} from "../services/rateLimit";
+
+const REGION = "us-west2";
 
 interface TypingStatusRequest {
   roomId: string;
@@ -21,21 +16,16 @@ interface TypingStatusResponse {
   success: boolean;
 }
 
-/**
- * Update typing status for a user in a room
- */
-export const setTypingStatus = onCall<TypingStatusRequest>(
-  callableOptions,
-  async (request): Promise<TypingStatusResponse> => {
-  // Check authentication
-    if (!request.auth) {
+export const setTypingStatus = functions
+  .region(REGION)
+  .https.onCall(async (data, context): Promise<TypingStatusResponse> => {
+    if (!context.auth) {
       throw new HttpsError("unauthenticated", "Must be logged in");
     }
 
-    const userId = request.auth.uid;
-    const {roomId, isTyping} = request.data;
+    const userId = context.auth.uid;
+    const {roomId, isTyping} = data as TypingStatusRequest;
 
-    // Validate input
     if (!roomId || typeof roomId !== "string") {
       throw new HttpsError("invalid-argument", "Room ID is required");
     }
@@ -46,7 +36,6 @@ export const setTypingStatus = onCall<TypingStatusRequest>(
 
     return withRateLimit(userId, "typing_status", async () => {
       try {
-      // Verify user is a member of the room
         const memberRef = db.doc(`rooms/${roomId}/members/${userId}`);
         const memberDoc = await memberRef.get();
 
@@ -54,7 +43,6 @@ export const setTypingStatus = onCall<TypingStatusRequest>(
           throw new HttpsError("permission-denied", "Not a member of this room");
         }
 
-        // Update typing status
         const typingRef = db.doc(`rooms/${roomId}/typing/${userId}`);
 
         if (isTyping) {
@@ -63,7 +51,6 @@ export const setTypingStatus = onCall<TypingStatusRequest>(
             updatedAt: FieldValue.serverTimestamp(),
           });
         } else {
-        // Delete the typing indicator when not typing
           await typingRef.delete();
         }
 

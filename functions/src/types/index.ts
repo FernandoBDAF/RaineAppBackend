@@ -31,28 +31,7 @@ export interface User {
   suspendReason?: string;
   createdAt: Timestamp | FieldValue;
   lastSeen?: Timestamp | FieldValue;
-  firstName: string;
-  lastInitial: string;
-  zipCode: string;
-  city: string;
-  state: string;
-  county: string;
-  cityFeel: string;
-  childCount: number;
-  isExpecting: boolean;
-  dueDate: null,
-  children: [],
-  beforeMotherhood: [],
-  perfectWeekend: [],
-  feelYourself: null,
-  hardTruths: [],
-  unexpectedJoys: [],
-  aesthetic: [],
-  momFriendStyle: [],
-  whatBroughtYou: null,
-  generatedBio: "",
-  bioApproved: false,
-  profileSetupCompleted: false
+  referralCode?: string;
 }
 
 export type SubscriptionStatus =

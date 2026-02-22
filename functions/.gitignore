@@ -1,3 +1,5 @@
+.DS_Store
+
 # Compiled JavaScript files
 lib/**/*.js
 lib/**/*.js.map

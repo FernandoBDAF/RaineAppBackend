@@ -1,26 +1,15 @@
-/**
- * Raine Backend - Rate Limiting Service
- * Protects against abuse by limiting request frequency per user
- */
-
-import {HttpsError} from "firebase-functions/v2/https";
+import {HttpsError} from "firebase-functions/v1/https";
 import {FieldValue} from "firebase-admin/firestore";
 import {db} from "../utils/helpers";
 import {RateLimitConfig, RateLimitResult} from "../types";
 
-/**
- * Rate limit configurations for different actions
- */
 const RATE_LIMITS: Record<string, RateLimitConfig> = {
-  message_send: {windowMs: 60 * 1000, maxRequests: 30}, // 30 per minute
-  room_create: {windowMs: 60 * 60 * 1000, maxRequests: 10}, // 10 per hour
-  report_user: {windowMs: 24 * 60 * 60 * 1000, maxRequests: 5}, // 5 per day
-  typing_status: {windowMs: 10 * 1000, maxRequests: 10}, // 10 per 10 seconds
+  message_send: {windowMs: 60 * 1000, maxRequests: 30},
+  room_create: {windowMs: 60 * 60 * 1000, maxRequests: 10},
+  report_user: {windowMs: 24 * 60 * 60 * 1000, maxRequests: 5},
+  typing_status: {windowMs: 10 * 1000, maxRequests: 10},
 };
 
-/**
- * Check if an action is allowed based on rate limits
- */
 export async function checkRateLimit(
   userId: string,
   action: string
@@ -38,23 +27,16 @@ export async function checkRateLimit(
     const doc = await transaction.get(rateLimitRef);
     const data = doc.data();
 
-    // Clean up old timestamps and count current window
     const timestamps: number[] = data?.timestamps || [];
     const validTimestamps = timestamps.filter((t) => t > windowStart);
 
     if (validTimestamps.length >= config.maxRequests) {
-      // Rate limited
       const oldestInWindow = Math.min(...validTimestamps);
       const resetAt = new Date(oldestInWindow + config.windowMs);
 
-      return {
-        allowed: false,
-        remaining: 0,
-        resetAt,
-      };
+      return {allowed: false, remaining: 0, resetAt};
     }
 
-    // Add new timestamp
     validTimestamps.push(now);
     transaction.set(rateLimitRef, {
       timestamps: validTimestamps,
@@ -69,9 +51,6 @@ export async function checkRateLimit(
   });
 }
 
-/**
- * Middleware wrapper for callable functions with rate limiting
- */
 export async function withRateLimit<T>(
   userId: string,
   action: string,
