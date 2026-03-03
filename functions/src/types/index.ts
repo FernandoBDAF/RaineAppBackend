@@ -32,6 +32,7 @@ export interface User {
   createdAt: Timestamp | FieldValue;
   lastSeen?: Timestamp | FieldValue;
   referralCode?: string;
+  connectionId?: string;
 }
 
 export type SubscriptionStatus =
@@ -40,6 +41,15 @@ export type SubscriptionStatus =
   | "cancelled"
   | "expired"
   | "billing_issue";
+
+// ============================================================================
+// Connection Types
+// ============================================================================
+
+export interface Connection {
+  userId: string;
+  createdAt: Timestamp | FieldValue;
+}
 
 // ============================================================================
 // Device Types

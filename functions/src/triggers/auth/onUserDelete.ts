@@ -26,7 +26,11 @@ export const onUserDelete = functions.region(REGION).auth.user().onDelete(async 
     await db.doc(`users/${userId}`).delete();
     logger.info("Deleted user profile", {userId});
 
-    // 2. Delete user devices
+    // 2. Delete user connection document
+    await db.doc(`connections/${userId}`).delete();
+    logger.info("Deleted user connection", {userId});
+
+    // 3. Delete user devices
     const devicesSnapshot = await db
       .collection(`users/${userId}/devices`)
       .get();
@@ -38,7 +42,7 @@ export const onUserDelete = functions.region(REGION).auth.user().onDelete(async 
       });
     }
 
-    // 3. Delete user room memberships (inverse lookup)
+    // 4. Delete user room memberships (inverse lookup)
     const membershipsSnapshot = await db
       .collection(`users/${userId}/roomMemberships`)
       .get();
@@ -50,7 +54,7 @@ export const onUserDelete = functions.region(REGION).auth.user().onDelete(async 
       });
     }
 
-    // 4. Remove user from all rooms they were a member of
+    // 5. Remove user from all rooms they were a member of
     // const roomMembersQuery = await db
     //   .collectionGroup("members")
     //   .where("__name__", ">=", `rooms/${userId}`)
@@ -73,7 +77,7 @@ export const onUserDelete = functions.region(REGION).auth.user().onDelete(async 
       }
     }
 
-    // 5. Delete user notifications
+    // 6. Delete user notifications
     const notificationsSnapshot = await db
       .collection("notifications")
       .where("userId", "==", userId)
@@ -86,7 +90,7 @@ export const onUserDelete = functions.region(REGION).auth.user().onDelete(async 
       });
     }
 
-    // 6. Delete user reports (both as reporter and reported)
+    // 7. Delete user reports (both as reporter and reported)
     const reportsAsReporterSnapshot = await db
       .collection("userReports")
       .where("reporterId", "==", userId)
@@ -103,7 +107,7 @@ export const onUserDelete = functions.region(REGION).auth.user().onDelete(async 
       await batchDelete(reportsAsReportedSnapshot.docs);
     }
 
-    // 7. Clean up rate limit records
+    // 8. Clean up rate limit records
     const rateLimitsSnapshot = await db
       .collection("rateLimits")
       .where("__name__", ">=", `${userId}_`)

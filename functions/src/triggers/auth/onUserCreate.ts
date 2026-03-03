@@ -7,7 +7,7 @@ import * as functions from "firebase-functions/v1";
 import * as logger from "firebase-functions/logger";
 import {FieldValue} from "firebase-admin/firestore";
 import {db, generateUniqueReferralCode} from "../../utils/helpers";
-import {User} from "../../types";
+import {Connection, User} from "../../types";
 
 const REGION = "us-west2";
 
@@ -43,13 +43,26 @@ export const onUserCreate = functions
           quietHoursEnd: null,
         },
         referralCode,
+        connectionId: userId,
         createdAt: FieldValue.serverTimestamp(),
         lastSeen: FieldValue.serverTimestamp(),
       };
 
-      await db.doc(`users/${userId}`).set(userProfile);
+      // Create connection document for the user (1:1 mapping)
+      const connection: Connection = {
+        userId,
+        createdAt: FieldValue.serverTimestamp(),
+      };
 
-      logger.info("User profile created", {userId, referralCode});
+      await Promise.all([
+        db.doc(`users/${userId}`).set(userProfile),
+        db.doc(`connections/${userId}`).set(connection),
+      ]);
+
+      logger.info("User profile and connection created", {
+        userId,
+        referralCode,
+      });
     } catch (error: unknown) {
       const errObj = error as { code?: number; message?: string; details?: string };
       logger.error(
