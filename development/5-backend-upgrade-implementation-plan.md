@@ -9,10 +9,10 @@
 **Source Documents:**
 - `systemic_view/4-infra-and-data.md` — Unified data model contract
 - `systemic_view/4-completing-the-vision.md` — Screen & flow architecture
-- `RaineApp/documents/MASTER-IMPLEMENTATION-PLAN.md` — Frontend phasing
-- `RaineApp/documents/3-INTRODUCTIONS-PRD.md` — Introductions feature spec
-- `RaineApp/documents/3-COMMUNITIES-PRD.md` — Communities feature spec
-- `RaineApp/documents/3-DROPS-PRD.md` — Drops feature spec
+- `RaineApp/implementation-history/7-MASTER-IMPLEMENTATION-PLAN.md` — Frontend phasing
+- `RaineApp/documents/BUSINESS/3-FEATURE-SPECS/3.3-INTRODUCTIONS.md` — Introductions feature spec
+- `RaineApp/documents/BUSINESS/3-FEATURE-SPECS/3.4-COMMUNITIES.md` — Communities feature spec
+- `RaineApp/documents/BUSINESS/3-FEATURE-SPECS/3.5-DROPS.md` — Drops feature spec
 
 ---
 

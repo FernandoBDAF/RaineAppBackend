@@ -3,20 +3,25 @@
 > **Status:** Not Started - All phases pending
 
 **Project:** Raine-bk  
-**Scope:** Firebase Auth configuration + LinkedIn Cloud Functions  
+**Scope:** Firebase Auth configuration (email/password primary)  
 **Reference:** `systemic_view/2-AUTHENTICATION-IMPLEMENTATION-STUDY.md`  
 **Deferred Tasks:** See `development/0-backlog.md` → Tasks 7, 8, 9
+
+> **Note (March 2026):** The frontend now uses email/password authentication exclusively. Social login (Facebook, Apple, LinkedIn) has been removed from the frontend roadmap. LinkedIn Cloud Function work (Phase 3) and Firebase Console social provider setup (Phase 1) are deferred indefinitely.
 
 ---
 
 ## Overview
 
-The backend authentication work is minimal - Firebase Auth handles social login natively. The backend's role is:
+The frontend uses **email/password authentication** as the sole auth method. Social login providers (Facebook, Apple, LinkedIn) were originally planned but have been removed from the current frontend implementation. The backend's remaining role is:
 
-1. **Firebase Console configuration** (human task)
-2. **LinkedIn OAuth Cloud Functions** (LLM task - Firebase doesn't support LinkedIn natively)
-3. **User type updates** (LLM task - add auth provider tracking)
-4. **Verify existing triggers** (LLM task - ensure onUserCreate handles social profile data)
+1. **Firebase Console configuration** — Verify email/password provider is enabled (human task)
+2. **User type updates** (LLM task - add auth provider tracking)
+3. **Verify existing triggers** (LLM task - ensure onUserCreate handles email/password signups correctly)
+
+~~**Deferred:**~~
+- ~~LinkedIn OAuth Cloud Functions~~ — Deferred; social login removed from frontend
+- ~~Firebase Console social provider setup (Facebook, Apple)~~ — Deferred; social login removed from frontend
 
 ---
 
@@ -27,13 +32,16 @@ The backend authentication work is minimal - Firebase Auth handles social login 
 - `onUserDelete` trigger - GDPR cleanup on deletion ✅
 - Firestore security rules - user profile protection ✅
 - User TypeScript types ✅
+- **Frontend uses email/password auth exclusively** ✅
 
 ### Gaps
 - `onUserCreate` doesn't store auth provider type
-- `onUserCreate` doesn't handle social profile photo URL properly
-- No LinkedIn OAuth functions (LinkedIn isn't a native Firebase provider)
-- No LinkedIn secrets configured
-- Firebase Console: Social providers not enabled
+
+### No Longer Applicable (Social Login Removed from Frontend)
+- ~~`onUserCreate` doesn't handle social profile photo URL properly~~ — N/A; no social login
+- ~~No LinkedIn OAuth functions~~ — Deferred; social login removed from frontend
+- ~~No LinkedIn secrets configured~~ — Deferred
+- ~~Firebase Console: Social providers not enabled~~ — Deferred
 
 ---
 
@@ -136,6 +144,8 @@ const userProfile: User = {
 ---
 
 ## Phase 3: LinkedIn Cloud Functions
+
+> **⚠️ DEFERRED (March 2026):** This entire phase is deferred. The frontend removed social login and now uses email/password only. LinkedIn Cloud Function work is no longer on the active roadmap. The details below are retained for reference if social login is revisited in the future.
 
 **Owner:** LLM  
 **Duration:** ~1 hour

@@ -122,7 +122,7 @@ allow update: if isAuthenticated() && isOwner(userId) &&
 ## 2. Authentication
 
 ### Frontend Feature
-Email/password login, optional social login (Google, Apple)
+Email/password login only. Social login (Facebook, Apple, LinkedIn) was originally planned but has been removed from the frontend implementation.
 
 ### Backend Requirements
 
@@ -132,6 +132,8 @@ Email/password login, optional social login (Google, Apple)
 | User onCreate trigger | Create user document on signup | [Phase 2.2](./backend-implementation-plan.md#22-auth-triggers-cloud-functions) |
 | User onDelete trigger | GDPR-compliant data cleanup | [Phase 2.2](./backend-implementation-plan.md#22-auth-triggers-cloud-functions) |
 | Password policies | Minimum 8 chars, complexity rules | [Phase 2.1](./backend-implementation-plan.md#21-firebase-auth-configuration) |
+
+> **Note (March 2026):** Social login providers (Facebook/Instagram, Apple, LinkedIn) are no longer implemented in the frontend. The backend does not need LinkedIn Cloud Functions or social provider configuration at this time. See `development/4-authentication-implementation-plan.md` for deferred social login details.
 
 ### Auth Trigger for Profile Setup
 

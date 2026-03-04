@@ -15,7 +15,7 @@
 | **Cloud Functions** | ✅ Deployed | 9/9 functions live |
 | **Security Rules** | ✅ Deployed | Firestore + Storage |
 | **Secrets Management** | ✅ Configured | Google Secret Manager |
-| **Authentication** | ⏳ Partial | Email/password only; social pending |
+| **Authentication** | ✅ Implemented | Email/password implemented; social login removed from frontend roadmap |
 | **RevenueCat Integration** | ⚠️ Backend ready, dashboard not configured | Webhook deployed, needs RevenueCat setup |
 | **Mobile Integration** | ⚠️ In progress | EAS build initiated |
 | **Monitoring & CI/CD** | ❌ Not started | Deferred |
@@ -54,6 +54,15 @@ All functions are live in production at **us-west2**:
 | 7 | `processRetryQueue` | v2 | Scheduled (5 min) | Retry failed push notifications |
 | 8 | `cleanupDevices` | v2 | Scheduled (daily 3 AM) | Remove stale tokens, old events |
 | 9 | `revenuecatWebhook` | v2 | HTTPS | Subscription lifecycle events |
+
+### 2.2b Frontend-Backend Alignment Notes (March 2026)
+
+- **Authentication:** The frontend now uses email/password auth exclusively. Social login (Facebook, Apple, LinkedIn) has been removed from the frontend. Backend social auth work (LinkedIn Cloud Functions, social provider console setup) is deferred.
+- **Connections collection:** The frontend has implemented a `connections` Firestore collection for managing user connections. Backend rules and triggers should account for this collection.
+- **`profileSetupCompletedAt`:** The frontend uses a `profileSetupCompletedAt` timestamp field instead of a simple `completed` boolean to track profile setup completion.
+- **UserProfile fields:** All profile-setup fields (name, location, preferences, children, etc.) are stored directly in the user's Firestore document.
+- **`app.config.js`:** The frontend migrated from `app.json` to `app.config.js` for Expo configuration.
+- **Mock mode:** Mock mode has been removed from the frontend.
 
 ### 2.3 Supporting Code
 
@@ -182,12 +191,12 @@ On the Blaze plan (pay-as-you-go), estimated monthly cost for MVP usage (~100 us
 
 | Blocker | Blocks | Owner | Effort |
 |---------|--------|-------|--------|
-| Facebook App not created | Facebook/Instagram login on frontend + backend | Human | 2 hours |
-| LinkedIn App not created | LinkedIn login on frontend + backend | Human | 1 hour |
+| ~~Facebook App not created~~ | ~~Facebook/Instagram login~~ — No longer needed; social login removed from frontend | — | — |
+| ~~LinkedIn App not created~~ | ~~LinkedIn login~~ — No longer needed; social login removed from frontend | — | — |
 | EAS build not completed | Testing Firebase integration on device | Human (in progress) | 20 min (waiting) |
 | RevenueCat not configured | Subscription flow testing | Human | 30 min |
 
-None of these block each other - they can all be resolved in parallel.
+Social login blockers are no longer relevant since the frontend uses email/password only.
 
 ---
 
