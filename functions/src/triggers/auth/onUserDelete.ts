@@ -1,10 +1,13 @@
 /**
  * Raine Backend - User Deletion Trigger
  * Cleans up user data when a user is deleted (GDPR compliance)
+ *
+ * Aligned with connections-based data model (rooms removed).
  */
 
 import * as functions from "firebase-functions/v1";
 import * as logger from "firebase-functions/logger";
+import {FieldValue} from "firebase-admin/firestore";
 import {db, batchDelete} from "../../utils/helpers";
 
 const REGION = "us-west2";
@@ -26,9 +29,30 @@ export const onUserDelete = functions.region(REGION).auth.user().onDelete(async 
     await db.doc(`users/${userId}`).delete();
     logger.info("Deleted user profile", {userId});
 
-    // 2. Delete user connection document
-    await db.doc(`connections/${userId}`).delete();
-    logger.info("Deleted user connection", {userId});
+    // 2. Cancel all connections where user is a member
+    const connectionsSnapshot = await db
+      .collection("connections")
+      .where("memberUids", "array-contains", userId)
+      .get();
+
+    for (const connectionDoc of connectionsSnapshot.docs) {
+      const connection = connectionDoc.data();
+
+      const updates: Record<string, unknown> = {
+        status: "canceled",
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+
+      if (connection.fromUser?.uid === userId) {
+        updates["fromUser"] = null;
+      }
+      if (connection.toUser?.uid === userId) {
+        updates["toUser"] = null;
+      }
+
+      await connectionDoc.ref.update(updates);
+      logger.info("Canceled connection", {userId, connectionId: connectionDoc.id});
+    }
 
     // 3. Delete user devices
     const devicesSnapshot = await db
@@ -42,42 +66,7 @@ export const onUserDelete = functions.region(REGION).auth.user().onDelete(async 
       });
     }
 
-    // 4. Delete user room memberships (inverse lookup)
-    const membershipsSnapshot = await db
-      .collection(`users/${userId}/roomMemberships`)
-      .get();
-    if (!membershipsSnapshot.empty) {
-      await batchDelete(membershipsSnapshot.docs);
-      logger.info("Deleted user room memberships", {
-        userId,
-        count: membershipsSnapshot.size,
-      });
-    }
-
-    // 5. Remove user from all rooms they were a member of
-    // const roomMembersQuery = await db
-    //   .collectionGroup("members")
-    //   .where("__name__", ">=", `rooms/${userId}`)
-    //   .where("__name__", "<", `rooms/${userId}\uf8ff`)
-    //   .get();
-
-    // This query won't work as expected, so we need to iterate rooms
-    // Get all rooms and check if user is a member
-    const roomsSnapshot = await db.collection("rooms").get();
-    for (const roomDoc of roomsSnapshot.docs) {
-      const memberRef = db.doc(`rooms/${roomDoc.id}/members/${userId}`);
-      const memberDoc = await memberRef.get();
-      if (memberDoc.exists) {
-        await memberRef.delete();
-        // Decrement member count
-        await roomDoc.ref.update({
-          memberCount: (roomDoc.data().memberCount || 1) - 1,
-        });
-        logger.info("Removed user from room", {userId, roomId: roomDoc.id});
-      }
-    }
-
-    // 6. Delete user notifications
+    // 4. Delete user notifications
     const notificationsSnapshot = await db
       .collection("notifications")
       .where("userId", "==", userId)
@@ -90,7 +79,7 @@ export const onUserDelete = functions.region(REGION).auth.user().onDelete(async 
       });
     }
 
-    // 7. Delete user reports (both as reporter and reported)
+    // 5. Delete user reports (both as reporter and reported)
     const reportsAsReporterSnapshot = await db
       .collection("userReports")
       .where("reporterId", "==", userId)
@@ -107,7 +96,7 @@ export const onUserDelete = functions.region(REGION).auth.user().onDelete(async 
       await batchDelete(reportsAsReportedSnapshot.docs);
     }
 
-    // 8. Clean up rate limit records
+    // 6. Clean up rate limit records
     const rateLimitsSnapshot = await db
       .collection("rateLimits")
       .where("__name__", ">=", `${userId}_`)

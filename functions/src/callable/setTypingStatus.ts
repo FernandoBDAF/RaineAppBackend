@@ -4,11 +4,12 @@ import * as logger from "firebase-functions/logger";
 import {FieldValue} from "firebase-admin/firestore";
 import {db} from "../utils/helpers";
 import {withRateLimit} from "../services/rateLimit";
+import {Connection} from "../types";
 
 const REGION = "us-west2";
 
 interface TypingStatusRequest {
-  roomId: string;
+  connectionId: string;
   isTyping: boolean;
 }
 
@@ -24,10 +25,10 @@ export const setTypingStatus = functions
     }
 
     const userId = context.auth.uid;
-    const {roomId, isTyping} = data as TypingStatusRequest;
+    const {connectionId, isTyping} = data as TypingStatusRequest;
 
-    if (!roomId || typeof roomId !== "string") {
-      throw new HttpsError("invalid-argument", "Room ID is required");
+    if (!connectionId || typeof connectionId !== "string") {
+      throw new HttpsError("invalid-argument", "Connection ID is required");
     }
 
     if (typeof isTyping !== "boolean") {
@@ -36,14 +37,20 @@ export const setTypingStatus = functions
 
     return withRateLimit(userId, "typing_status", async () => {
       try {
-        const memberRef = db.doc(`rooms/${roomId}/members/${userId}`);
-        const memberDoc = await memberRef.get();
+        const connectionRef = db.doc(`connections/${connectionId}`);
+        const connectionDoc = await connectionRef.get();
 
-        if (!memberDoc.exists) {
-          throw new HttpsError("permission-denied", "Not a member of this room");
+        if (!connectionDoc.exists) {
+          throw new HttpsError("not-found", "Connection not found");
         }
 
-        const typingRef = db.doc(`rooms/${roomId}/typing/${userId}`);
+        const connection = connectionDoc.data() as Connection;
+
+        if (!connection.memberUids.includes(userId)) {
+          throw new HttpsError("permission-denied", "Not a member of this connection");
+        }
+
+        const typingRef = db.doc(`connections/${connectionId}/typing/${userId}`);
 
         if (isTyping) {
           await typingRef.set({
@@ -54,7 +61,7 @@ export const setTypingStatus = functions
           await typingRef.delete();
         }
 
-        logger.info("Typing status updated", {userId, roomId, isTyping});
+        logger.info("Typing status updated", {userId, connectionId, isTyping});
 
         return {success: true};
       } catch (error) {
@@ -63,7 +70,7 @@ export const setTypingStatus = functions
         }
         logger.error("Error setting typing status", {
           userId,
-          roomId,
+          connectionId,
           error: error instanceof Error ? error.message : "Unknown error",
         });
         throw new HttpsError("internal", "Failed to update typing status");

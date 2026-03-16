@@ -5,7 +5,6 @@ import {RateLimitConfig, RateLimitResult} from "../types";
 
 const RATE_LIMITS: Record<string, RateLimitConfig> = {
   message_send: {windowMs: 60 * 1000, maxRequests: 30},
-  room_create: {windowMs: 60 * 60 * 1000, maxRequests: 10},
   report_user: {windowMs: 24 * 60 * 60 * 1000, maxRequests: 5},
   typing_status: {windowMs: 10 * 1000, maxRequests: 10},
 };

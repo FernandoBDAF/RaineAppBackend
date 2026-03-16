@@ -3,11 +3,12 @@ import {HttpsError} from "firebase-functions/v1/https";
 import * as logger from "firebase-functions/logger";
 import {FieldValue} from "firebase-admin/firestore";
 import {db} from "../utils/helpers";
+import {Connection} from "../types";
 
 const REGION = "us-west2";
 
 interface MarkReadRequest {
-  roomId: string;
+  connectionId: string;
   messageId?: string;
 }
 
@@ -24,20 +25,26 @@ export const markMessagesRead = functions
     }
 
     const userId = context.auth.uid;
-    const {roomId, messageId} = data as MarkReadRequest;
+    const {connectionId, messageId} = data as MarkReadRequest;
 
-    if (!roomId || typeof roomId !== "string") {
-      throw new HttpsError("invalid-argument", "Room ID is required");
+    if (!connectionId || typeof connectionId !== "string") {
+      throw new HttpsError("invalid-argument", "Connection ID is required");
     }
 
-    logger.info("Marking messages as read", {userId, roomId, messageId});
+    logger.info("Marking messages as read", {userId, connectionId, messageId});
 
     try {
-      const memberRef = db.doc(`rooms/${roomId}/members/${userId}`);
-      const memberDoc = await memberRef.get();
+      const connectionRef = db.doc(`connections/${connectionId}`);
+      const connectionDoc = await connectionRef.get();
 
-      if (!memberDoc.exists) {
-        throw new HttpsError("permission-denied", "Not a member of this room");
+      if (!connectionDoc.exists) {
+        throw new HttpsError("not-found", "Connection not found");
+      }
+
+      const connection = connectionDoc.data() as Connection;
+
+      if (!connection.memberUids.includes(userId)) {
+        throw new HttpsError("permission-denied", "Not a member of this connection");
       }
 
       const now = new Date();
@@ -45,19 +52,12 @@ export const markMessagesRead = functions
 
       if (messageId) {
         const readReceiptRef = db.doc(
-          `rooms/${roomId}/messages/${messageId}/readBy/${userId}`
+          `connections/${connectionId}/messages/${messageId}/readBy/${userId}`
         );
         await readReceiptRef.set({timestamp});
       }
 
-      await db.doc(`users/${userId}/roomMemberships/${roomId}`).set(
-        {lastRead: timestamp},
-        {merge: true}
-      );
-
-      await memberRef.update({lastRead: timestamp});
-
-      logger.info("Messages marked as read", {userId, roomId});
+      logger.info("Messages marked as read", {userId, connectionId, messageId});
 
       return {success: true, timestamp: now.toISOString()};
     } catch (error) {
@@ -66,7 +66,7 @@ export const markMessagesRead = functions
       }
       logger.error("Error marking messages read", {
         userId,
-        roomId,
+        connectionId,
         error: error instanceof Error ? error.message : "Unknown error",
       });
       throw new HttpsError("internal", "Failed to mark messages as read");
