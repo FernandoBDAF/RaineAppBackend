@@ -7,13 +7,16 @@ import * as functions from "firebase-functions/v1";
 import * as logger from "firebase-functions/logger";
 import {FieldValue} from "firebase-admin/firestore";
 import {db, generateUniqueReferralCode} from "../../utils/helpers";
-import {Connection, User} from "../../types";
+import {User} from "../../types";
 
 const REGION = "us-west2";
 
 /**
  * Triggered when a new user is created in Firebase Auth
- * Creates a corresponding user profile document in Firestore
+ * Creates a corresponding user profile document in Firestore.
+ * Design: No longer creates connections/{uid} — the new model uses
+ * per-relationship connections (connections/{connectionId}) created
+ * when a user acts on an introduction. See development/3-connections-refactor-plan.md
  */
 export const onUserCreate = functions
   .region(REGION)
@@ -43,23 +46,13 @@ export const onUserCreate = functions
           quietHoursEnd: null,
         },
         referralCode,
-        connectionId: userId,
         createdAt: FieldValue.serverTimestamp(),
         lastSeen: FieldValue.serverTimestamp(),
       };
 
-      // Create connection document for the user (1:1 mapping)
-      const connection: Connection = {
-        userId,
-        createdAt: FieldValue.serverTimestamp(),
-      };
+      await db.doc(`users/${userId}`).set(userProfile);
 
-      await Promise.all([
-        db.doc(`users/${userId}`).set(userProfile),
-        db.doc(`connections/${userId}`).set(connection),
-      ]);
-
-      logger.info("User profile and connection created", {
+      logger.info("User profile created", {
         userId,
         referralCode,
       });

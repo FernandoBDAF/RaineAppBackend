@@ -2,7 +2,7 @@ import * as functions from "firebase-functions/v1";
 import * as logger from "firebase-functions/logger";
 import {FieldValue} from "firebase-admin/firestore";
 import {db, batchDelete} from "../utils/helpers";
-import {sendPushNotifications} from "../services/notifications";
+import {sendPushNotificationsForConnection} from "../services/notifications";
 import {NotificationRetry} from "../types";
 
 const MAX_RETRIES = 3;
@@ -45,10 +45,13 @@ export const processRetryQueue = functions
         }
 
         try {
-          await sendPushNotifications(retry.roomId, retry.message);
+          await sendPushNotificationsForConnection(
+            retry.connectionId,
+            retry.message
+          );
           successfulRetries.push(doc);
           logger.info("Retry successful", {
-            roomId: retry.roomId,
+            connectionId: retry.connectionId,
             messageId: retry.messageId,
           });
         } catch (error) {
@@ -59,7 +62,7 @@ export const processRetryQueue = functions
           });
           failedRetries.push(doc);
           logger.warn("Retry failed", {
-            roomId: retry.roomId,
+            connectionId: retry.connectionId,
             messageId: retry.messageId,
             retryCount: retry.retryCount + 1,
             error: error instanceof Error ? error.message : "Unknown error",

@@ -1,5 +1,8 @@
 /**
  * Raine Backend - TypeScript Type Definitions
+ *
+ * Aligned with RaineApp frontend after connections refactor (Phase 3 complete).
+ * Legacy room-based types have been removed.
  */
 
 import {FieldValue, Timestamp} from "firebase-admin/firestore";
@@ -32,7 +35,7 @@ export interface User {
   createdAt: Timestamp | FieldValue;
   lastSeen?: Timestamp | FieldValue;
   referralCode?: string;
-  connectionId?: string;
+  role?: "admin" | "user"; // Custom claim for backoffice access; undefined = 'user'
 }
 
 export type SubscriptionStatus =
@@ -46,9 +49,72 @@ export type SubscriptionStatus =
 // Connection Types
 // ============================================================================
 
+export interface ConnectionUser {
+  uid: string;
+  firstName: string;
+  lastInitial: string;
+  photoURL: string | null;
+}
+
+export type ConnectionStatus = "pending" | "active" | "declined" | "canceled";
+
+export interface ConnectionLastMessage {
+  text: string;
+  senderId: string;
+  timestamp: Timestamp | FieldValue;
+}
+
 export interface Connection {
-  userId: string;
+  id: string;
+  fromUser: ConnectionUser;
+  toUser: ConnectionUser;
+  memberUids: [string, string];
+  status: ConnectionStatus;
+  introductionId: string | null;
+  lastMessage: ConnectionLastMessage | null;
   createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
+  acceptedAt: Timestamp | null;
+}
+
+// ============================================================================
+// Introduction Types (Phase 1+)
+// ============================================================================
+
+export interface IntroductionUser {
+  uid: string;
+  firstName: string;
+  lastInitial: string;
+  photoURL: string | null;
+  city: string;
+  state: string;
+  action: "none" | "saved" | "dismissed";
+}
+
+export interface MatchDetails {
+  similarities: string[];
+  customText: string;
+  matchScore: number | null;
+}
+
+export type IntroductionStatus =
+  | "active"
+  | "saved"
+  | "requested"
+  | "accepted"
+  | "declined"
+  | "expired";
+
+export interface Introduction {
+  id: string;
+  users: [IntroductionUser, IntroductionUser];
+  userUids: [string, string];
+  matchDetails: MatchDetails;
+  status: IntroductionStatus;
+  connectionId: string | null;
+  createdAt: Timestamp | FieldValue;
+  expiresAt: Timestamp | null;
+  updatedAt: Timestamp | FieldValue;
 }
 
 // ============================================================================
@@ -70,37 +136,6 @@ export interface DeviceToken {
 }
 
 // ============================================================================
-// Room Types
-// ============================================================================
-
-export interface Room {
-  name: string;
-  photoURL?: string;
-  memberCount: number;
-  lastMessage?: LastMessage;
-  createdAt: Timestamp | FieldValue;
-  updatedAt: Timestamp | FieldValue;
-}
-
-export interface LastMessage {
-  text: string;
-  senderId: string;
-  timestamp: Timestamp | FieldValue;
-}
-
-export interface RoomMember {
-  joinedAt: Timestamp | FieldValue;
-  role: "admin" | "member";
-  notificationsEnabled: boolean;
-}
-
-export interface RoomMembership {
-  joinedAt: Timestamp | FieldValue;
-  lastRead?: Timestamp | FieldValue;
-  notificationsEnabled: boolean;
-}
-
-// ============================================================================
 // Message Types
 // ============================================================================
 
@@ -117,15 +152,17 @@ export interface Message {
   visible?: boolean;
 }
 
-export interface ReadReceipt {
+export interface MessagePayload {
+  text: string;
+  senderId: string;
   timestamp: Timestamp | FieldValue;
 }
 
 // ============================================================================
-// Typing Indicator Types
+// Typing Indicator Types (for connections/{connectionId}/typing/{userId})
 // ============================================================================
 
-export interface TypingIndicator {
+export interface ConnectionTypingIndicator {
   isTyping: boolean;
   updatedAt: Timestamp | FieldValue;
 }
@@ -171,13 +208,9 @@ export interface ProcessedWebhook {
 // ============================================================================
 
 export interface NotificationRetry {
-  roomId: string;
+  connectionId: string;
   messageId: string;
-  message: {
-    text: string;
-    senderId: string;
-    timestamp: Timestamp | FieldValue;
-  };
+  message: MessagePayload;
   error: string;
   createdAt: Timestamp | FieldValue;
   retryCount: number;
@@ -215,7 +248,7 @@ export interface UserReport {
   reason: string;
   description?: string;
   messageId?: string;
-  roomId?: string;
+  connectionId?: string;
   status: "pending" | "reviewed" | "dismissed";
   createdAt: Timestamp | FieldValue;
 }

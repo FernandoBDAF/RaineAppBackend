@@ -1,6 +1,8 @@
 /**
  * Raine Backend - Push Notification Service
  * Handles sending push notifications to users across multiple devices
+ *
+ * Aligned with connections-based data model (rooms removed).
  */
 
 import * as logger from "firebase-functions/logger";
@@ -9,37 +11,33 @@ import {db, messaging, truncateMessage, isInQuietHours} from "../utils/helpers";
 import {DeviceToken, User, NotificationPreferences} from "../types";
 
 /**
- * Send push notifications to all members of a room (except sender)
+ * Send push notifications to connection members (except sender).
+ * Reads memberUids from the connection document.
  */
-export async function sendPushNotifications(
-  roomId: string,
+export async function sendPushNotificationsForConnection(
+  connectionId: string,
   message: {text: string; senderId: string; timestamp: unknown}
 ): Promise<void> {
-  // Get room details
-  const roomDoc = await db.doc(`rooms/${roomId}`).get();
-  const room = roomDoc.data();
+  const connectionDoc = await db.doc(`connections/${connectionId}`).get();
+  const connection = connectionDoc.data();
 
-  if (!room) {
-    throw new Error(`Room ${roomId} not found`);
-  }
-
-  // Get room members (excluding sender)
-  const membersSnapshot = await db.collection(`rooms/${roomId}/members`).get();
-
-  const recipientIds = membersSnapshot.docs
-    .map((doc) => doc.id)
-    .filter((id) => id !== message.senderId);
-
-  if (recipientIds.length === 0) {
-    logger.info("No recipients to notify", {roomId});
+  if (!connection?.memberUids) {
+    logger.info("Connection or memberUids not found", {connectionId});
     return;
   }
 
-  // Get all device tokens for all recipients
+  const recipientIds = (connection.memberUids as string[]).filter(
+    (id) => id !== message.senderId
+  );
+
+  if (recipientIds.length === 0) {
+    logger.info("No recipients to notify", {connectionId});
+    return;
+  }
+
   const deviceTokens: DeviceToken[] = [];
 
   for (const userId of recipientIds) {
-    // Check user notification preferences
     const userDoc = await db.doc(`users/${userId}`).get();
     const user = userDoc.data() as User | undefined;
 
@@ -47,16 +45,11 @@ export async function sendPushNotifications(
       continue;
     }
 
-    // Check quiet hours
     if (isInQuietHours(user.notificationPreferences as NotificationPreferences)) {
       continue;
     }
 
-    // Get all devices for this user
-    const devicesSnapshot = await db
-      .collection(`users/${userId}/devices`)
-      .get();
-
+    const devicesSnapshot = await db.collection(`users/${userId}/devices`).get();
     devicesSnapshot.docs.forEach((deviceDoc) => {
       const device = deviceDoc.data();
       if (device.fcmToken) {
@@ -71,18 +64,24 @@ export async function sendPushNotifications(
   }
 
   if (deviceTokens.length === 0) {
-    logger.info("No valid tokens to send to", {roomId});
+    logger.info("No valid tokens to send to", {connectionId});
     return;
   }
 
-  // Send multicast message
+  const otherUser = connection.fromUser?.uid === message.senderId ?
+    connection.toUser :
+    connection.fromUser;
+  const displayName = otherUser?.firstName ?
+    `${otherUser.firstName} ${otherUser.lastInitial || ""}`.trim() :
+    "New Message";
+
   const payload = {
     notification: {
-      title: room.name || "New Message",
+      title: displayName,
       body: truncateMessage(message.text, 100),
     },
     data: {
-      roomId: roomId,
+      connectionId,
       senderId: message.senderId,
       type: "new_message",
     },
@@ -106,14 +105,13 @@ export async function sendPushNotifications(
 
   const response = await messaging.sendEachForMulticast(payload);
 
-  logger.info("Push notifications sent", {
-    roomId,
+  logger.info("Push notifications sent for connection", {
+    connectionId,
     totalTokens: deviceTokens.length,
     successCount: response.successCount,
     failureCount: response.failureCount,
   });
 
-  // Handle failed tokens (remove invalid ones)
   await handleFailedTokens(response, deviceTokens);
 }
 

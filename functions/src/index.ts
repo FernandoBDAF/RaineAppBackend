@@ -20,7 +20,7 @@ export {onUserDelete} from "./triggers/auth/onUserDelete";
 // ============================================================================
 // Firestore Triggers
 // ============================================================================
-export {onMessageCreated} from "./triggers/firestore/onMessageCreated";
+export {onConnectionMessageCreated} from "./triggers/firestore/onConnectionMessageCreated";
 
 // ============================================================================
 // Callable Functions

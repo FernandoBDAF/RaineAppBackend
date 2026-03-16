@@ -57,11 +57,12 @@ export const cleanupDevices = functions
 
       logger.info(`Deleted ${processedEventsDeleted} old processed events`);
 
-      const roomsSnapshot = await db.collection("rooms").get();
+      // Clean stale typing indicators from connections
+      const connectionsSnapshot = await db.collection("connections").get();
 
-      for (const roomDoc of roomsSnapshot.docs) {
+      for (const connectionDoc of connectionsSnapshot.docs) {
         const typingSnapshot = await db
-          .collection(`rooms/${roomDoc.id}/typing`)
+          .collection(`connections/${connectionDoc.id}/typing`)
           .where("updatedAt", "<", typingCutoff)
           .get();
 
