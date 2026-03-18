@@ -112,6 +112,7 @@ export interface Introduction {
   matchDetails: MatchDetails;
   status: IntroductionStatus;
   connectionId: string | null;
+  requestedByUid: string | null;
   createdAt: Timestamp | FieldValue;
   expiresAt: Timestamp | null;
   updatedAt: Timestamp | FieldValue;
@@ -277,4 +278,26 @@ export type RevenueCatEventType =
 
 export interface RevenueCatWebhookPayload {
   event: RevenueCatWebhookEvent;
+}
+
+// ============================================================================
+// Profile Setup (for generateProfileBio callable)
+// ============================================================================
+
+export interface ProfileSetupInput {
+  firstName?: string;
+  city?: string;
+  state?: string;
+  childCount?: number;
+  children?: Array<{ name: string; birthMonth: number; birthYear: number }>;
+  isExpecting?: boolean;
+  cityFeel?: string | null;
+  beforeMotherhood?: string[];
+  perfectWeekend?: string[];
+  feelYourself?: string | null;
+  hardTruths?: string[];
+  unexpectedJoys?: string[];
+  aesthetic?: string[];
+  momFriendStyle?: string[];
+  whatBroughtYou?: string | null;
 }

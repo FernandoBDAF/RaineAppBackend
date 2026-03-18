@@ -28,6 +28,7 @@ export {onConnectionMessageCreated} from "./triggers/firestore/onConnectionMessa
 export {refreshFcmToken} from "./callable/refreshFcmToken";
 export {setTypingStatus} from "./callable/setTypingStatus";
 export {markMessagesRead} from "./callable/markMessagesRead";
+export {generateProfileBio} from "./callable/generateProfileBio";
 
 // ============================================================================
 // Scheduled Functions
