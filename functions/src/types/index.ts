@@ -56,7 +56,7 @@ export interface ConnectionUser {
   photoURL: string | null;
 }
 
-export type ConnectionStatus = "pending" | "active" | "declined" | "canceled";
+export type ConnectionStatus = "pending" | "active" | "dismissed" | "canceled";
 
 export interface ConnectionLastMessage {
   text: string;
@@ -88,7 +88,7 @@ export interface IntroductionUser {
   photoURL: string | null;
   city: string;
   state: string;
-  action: "none" | "saved" | "dismissed";
+  action: "none" | "saved" | "requested" | "dismissed";
 }
 
 export interface MatchDetails {
@@ -99,10 +99,9 @@ export interface MatchDetails {
 
 export type IntroductionStatus =
   | "active"
-  | "saved"
   | "requested"
   | "accepted"
-  | "declined"
+  | "dismissed"
   | "expired";
 
 export interface Introduction {
