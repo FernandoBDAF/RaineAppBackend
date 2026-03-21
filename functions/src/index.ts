@@ -35,6 +35,7 @@ export {generateProfileBio} from "./callable/generateProfileBio";
 // ============================================================================
 export {processRetryQueue} from "./scheduled/processRetryQueue";
 export {cleanupDevices} from "./scheduled/cleanupDevices";
+export {expireIntroductions} from "./scheduled/expireIntroductions";
 
 // ============================================================================
 // Webhooks
